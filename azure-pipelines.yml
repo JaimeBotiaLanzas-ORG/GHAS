@@ -1,0 +1,154 @@
+# ASP.NET Core (.NET Framework)
+# Build and test ASP.NET Core projects targeting the full .NET Framework.
+# Add steps that publish symbols, save build artifacts, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
+
+trigger:
+- master
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  env_name: 'pre'
+
+stages:
+- stage: Build
+  jobs:
+  - job: myJob
+    steps:
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(Build.SourcesDirectory)/pipeline-templates' 
+        artifactName: IaC-main
+    
+
+
+- stage: IaC
+  jobs:
+  - job: myJob2
+    steps:
+    - task: DownloadPipelineArtifact@2
+      inputs:
+        buildType: 'current'
+        artifactName: 'IaC-main'
+        targetPath: '$(System.DefaultWorkingDirectory)'
+    - task: CmdLine@2
+      inputs:
+        script: |
+          echo "Structure of work folder of this pipeline:"
+          tree $(Agent.WorkFolder)\1 /f
+          
+          echo "Build.ArtifactStagingDirectory:" 
+          
+          echo "$(Build.ArtifactStagingDirectory)"
+          
+          echo "Build.BinariesDirectory:" 
+          
+          echo "$(Build.BinariesDirectory)"
+          
+          echo "Build.SourcesDirectory:"
+          
+          echo "$(Build.SourcesDirectory)"
+        
+    - task: TerraformInstaller@0
+      inputs:
+        terraformVersion: 'latest'
+    
+    - task: TerraformTaskV3@3
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        workingDirectory: '$(System.DefaultWorkingDirectory)'
+        backendServiceArm: 'terraform-azure'
+        backendAzureRmResourceGroupName: 'Terraform-RG'
+        backendAzureRmStorageAccountName: 'terraform50'
+        backendAzureRmContainerName: 'terraform-container'
+        backendAzureRmKey: 'terraform.tf-state'
+
+    - task: TerraformTaskV3@3
+      inputs:
+        provider: 'azurerm'
+        command: 'plan'
+        workingDirectory: '$(System.DefaultWorkingDirectory)'
+        environmentServiceNameAzureRM: 'terraform-azure'
+
+    - task: TerraformTaskV3@3
+      inputs:
+        provider: 'azurerm'
+        command: 'apply'
+        workingDirectory: '$(System.DefaultWorkingDirectory)'
+        commandOptions: '-auto-approve'
+        environmentServiceNameAzureRM: 'terraform-azure'
+
+- stage: IaCpre
+  jobs:
+  - job: myJob3
+    steps:
+      
+    - task: DownloadPipelineArtifact@2
+      inputs:
+        buildType: 'current'
+        artifactName: 'IaC-main'
+        targetPath: '$(System.DefaultWorkingDirectory)'
+    - task: CmdLine@2
+      inputs:
+        script: |
+          echo "Structure of work folder of this pipeline:"
+          tree $(Agent.WorkFolder)\1 /f
+          
+          echo "Build.ArtifactStagingDirectory:" 
+          
+          echo "$(Build.ArtifactStagingDirectory)"
+          
+          echo "Build.BinariesDirectory:" 
+          
+          echo "$(Build.BinariesDirectory)"
+          
+          echo "Build.SourcesDirectory:"
+          
+          echo "$(Build.SourcesDirectory)"
+        
+    - task: TerraformInstaller@0
+      inputs:
+        terraformVersion: 'latest'
+    
+    - task: TerraformTaskV3@3
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        workingDirectory: '$(System.DefaultWorkingDirectory)'
+        backendServiceArm: 'terraform-azure'
+        backendAzureRmResourceGroupName: 'Terraform-RG'
+        backendAzureRmStorageAccountName: 'terraform50'
+        backendAzureRmContainerName: 'terraform-container'
+        backendAzureRmKey: 'terraform.tf-state'
+
+    - task: TerraformTaskV3@3
+      inputs:
+        provider: 'azurerm'
+        command: 'plan'
+        workingDirectory: '$(System.DefaultWorkingDirectory)'
+        environmentServiceNameAzureRM: 'terraform-azure'
+
+    - task: TerraformTaskV3@3
+      inputs:
+        provider: 'azurerm'
+        command: 'apply'
+        workingDirectory: '$(System.DefaultWorkingDirectory)'
+        commandOptions: '-auto-approve -var "env_name=$(env_name)"'
+        environmentServiceNameAzureRM: 'terraform-azure'         
+
+        
+
+
+      
+      
+      
+
+
+  
+
+
+
+
