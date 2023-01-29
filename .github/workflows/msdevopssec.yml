@@ -35,8 +35,7 @@ jobs:
       uses: microsoft/security-devops-action@preview
       continue-on-error: false
       id: msdo
-      with:
-        categories: 'IaC'
+
 
     - name: Upload alerts to Security tab
       uses: github/codeql-action/upload-sarif@v2
